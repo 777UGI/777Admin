@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "USDT Seller App (Debug)",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "USDT Seller App (Release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    }
+  ]
+}
