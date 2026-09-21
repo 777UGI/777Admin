@@ -4,7 +4,11 @@ import { Eye, EyeOff } from 'lucide-react';
 export default function App() {
   // Config & API Host
   const [apiHost, setApiHost] = useState(() => {
-    return localStorage.getItem('apiHost') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+    const stored = localStorage.getItem('apiHost');
+    if (stored && stored.includes('777-backend.onrender.com')) {
+      localStorage.removeItem('apiHost');
+    }
+    return localStorage.getItem('apiHost') || import.meta.env.VITE_API_BASE_URL || 'https://seven77-backend-cn0p.onrender.com';
   });
   const [showHostModal, setShowHostModal] = useState(false);
   const [tempHost, setTempHost] = useState(apiHost);
