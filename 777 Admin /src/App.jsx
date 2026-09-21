@@ -1570,11 +1570,12 @@ export default function App() {
                   <thead>
                     <tr>
                       <th>Agent Info</th>
-                      <th>Contact</th>
                       <th>Referral Code</th>
-                      <th>Sellers</th>
+                      <th>Total Volume</th>
+                      <th>Volume This Week</th>
+                      <th>Comm. Rate</th>
                       <th>Total Earned</th>
-                      <th>Commission</th>
+                      <th>Sellers</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -1588,29 +1589,41 @@ export default function App() {
                             </div>
                             <div>
                               <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{agent.name}</div>
-                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ID: {agent.id?.slice(-6) || 'N/A'}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{agent.email}</div>
+                              <div style={{ fontSize: '0.70rem', color: 'var(--text-dimmed)' }}>{agent.phone || 'No phone'}</div>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <div style={{ fontSize: '0.85rem' }}>{agent.email}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{agent.phone || 'No phone'}</div>
-                        </td>
-                        <td>
                           <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: 'var(--accent-purple)', background: 'rgba(177, 75, 244, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                            {agent.referralCode || 'N/A'}
+                            {agent.referralCode || 'AGENT001'}
                           </span>
                         </td>
                         <td>
-                          <span className="badge badge-verified">{agent.referredSellers?.length || 0}</span>
+                          <span style={{ fontWeight: 'bold', color: 'var(--accent-cyan)' }}>
+                            {(agent.totalVolumeUsdt || 0).toLocaleString()} USDT
+                          </span>
                         </td>
                         <td>
-                          <span style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>
-                            ₹{agent.totalEarned?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
+                          <span style={{ fontWeight: 'bold', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+                            🔥 {(agent.weeklyVolumeUsdt || 0).toLocaleString()} USDT
                           </span>
                         </td>
                         <td>
                           <span style={{ fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{agent.commissionPercent}%</span>
+                        </td>
+                        <td>
+                          <div>
+                            <span style={{ fontWeight: 'bold', color: 'var(--color-success)', display: 'block' }}>
+                              ₹{agent.totalEarned?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              ({agent.totalCommissionUsdt || 0} USDT)
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge badge-verified">{agent.referredSellers?.length || 0} Sellers</span>
                         </td>
                         <td>
                           <button
@@ -1618,14 +1631,14 @@ export default function App() {
                             onClick={() => { setSelectedAgentDetail(agent); setShowAgentPassword(false); setIsEditingPassword(false); }}
                             title="View complete partner performance, adjust rate & manage deboarding"
                           >
-                            <span>👁️</span> View Details ➔
+                            <span>👁️</span> Details ➔
                           </button>
                         </td>
                       </tr>
                     ))}
                     {filteredAgents.length === 0 && (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dimmed)' }}>
+                        <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dimmed)' }}>
                           {referralAgentSearchQuery ? (
                             <div>
                               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
@@ -2409,18 +2422,27 @@ export default function App() {
 
               <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {/* Agent Metrics Stats Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Total Volume</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{(selectedAgentDetail.totalVolumeUsdt || 0).toLocaleString()} USDT</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Volume This Week</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#f59e0b' }}>🔥 {(selectedAgentDetail.weeklyVolumeUsdt || 0).toLocaleString()} USDT</span>
+                  </div>
                   <div>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Commission Rate</span>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{selectedAgentDetail.commissionPercent}%</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{selectedAgentDetail.commissionPercent}%</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Total Commission Earned</span>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-success)' }}>₹{selectedAgentDetail.totalEarned?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Total Commission</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-success)', display: 'block' }}>₹{selectedAgentDetail.totalEarned?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({selectedAgentDetail.totalCommissionUsdt || 0} USDT)</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Referred Sellers Count</span>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-purple)' }}>{selectedAgentDetail.referredSellers?.length || 0} Sellers</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Referred Sellers</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--accent-purple)' }}>{selectedAgentDetail.referredSellers?.length || 0} Sellers</span>
                   </div>
                 </div>
 

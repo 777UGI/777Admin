@@ -896,13 +896,35 @@ app.get('/api/admin/agents', async (req, res) => {
     const Transaction = mongoose.model('Transaction');
     const agents = await User.find({ role: 'partner' }).lean();
 
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     const enriched = await Promise.all(agents.map(async (agent) => {
       const sellers = await User.find({ referredByAgentId: agent._id }).select('name email phone kycStatus createdAt').lean();
+      
       const txSum = await Transaction.aggregate([
         { $match: { partnerId: agent._id, status: { $in: ['verified', 'approved', 'paid'] } } },
-        { $group: { _id: null, total: { $sum: '$commissionAmount' } } }
+        { $group: { _id: null, totalComm: { $sum: '$commissionAmount' }, totalVol: { $sum: '$amountUsdt' } } }
       ]);
-      const totalCommUsdt = txSum[0]?.total || 0;
+      
+      const weeklyTxSum = await Transaction.aggregate([
+        { 
+          $match: { 
+            partnerId: agent._id, 
+            status: { $in: ['verified', 'approved', 'paid'] },
+            createdAt: { $gte: sevenDaysAgo }
+          } 
+        },
+        { $group: { _id: null, weeklyVol: { $sum: '$amountUsdt' } } }
+      ]);
+
+      const totalVolumeUsdt = txSum[0]?.totalVol || 0;
+      const weeklyVolumeUsdt = weeklyTxSum[0]?.weeklyVol || 0;
+      const commPercent = agent.commissionPercent || 0.5;
+      const totalCommUsdt = (txSum[0]?.totalComm && txSum[0]?.totalComm > 0) 
+        ? txSum[0].totalComm 
+        : (totalVolumeUsdt * (commPercent / 100));
+
       const settingsObj = await mongoose.model('Settings').findOne() || {};
       const agentSellingRate = settingsObj.sellingRate || 93.5;
       const totalCommission = parseFloat((totalCommUsdt * agentSellingRate).toFixed(2));
@@ -910,8 +932,11 @@ app.get('/api/admin/agents', async (req, res) => {
       return {
         ...agent,
         id: agent._id.toString(),
-        referralCode: agent.referralCode || `AGT-${agent._id.toString().slice(-4).toUpperCase()}`,
-        commissionPercent: agent.commissionPercent || 0.5,
+        referralCode: agent.referralCode || `AGENT001`,
+        commissionPercent: commPercent,
+        totalVolumeUsdt: parseFloat(totalVolumeUsdt.toFixed(2)),
+        weeklyVolumeUsdt: parseFloat(weeklyVolumeUsdt.toFixed(2)),
+        totalCommissionUsdt: parseFloat(totalCommUsdt.toFixed(2)),
         referredSellers: sellers,
         totalEarned: totalCommission
       };
