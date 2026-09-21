@@ -4,11 +4,12 @@ import { Eye, EyeOff } from 'lucide-react';
 export default function App() {
   // Config & API Host
   const [apiHost, setApiHost] = useState(() => {
-    const stored = localStorage.getItem('apiHost');
-    if (stored && stored.includes('777-backend.onrender.com')) {
-      localStorage.removeItem('apiHost');
+    let host = localStorage.getItem('apiHost') || import.meta.env.VITE_API_BASE_URL || 'https://seven77-backend-cn0p.onrender.com';
+    if (!host || host.includes('777-backend.onrender.com') || host.includes('localhost:5001')) {
+      host = 'https://seven77-backend-cn0p.onrender.com';
+      localStorage.setItem('apiHost', host);
     }
-    return localStorage.getItem('apiHost') || import.meta.env.VITE_API_BASE_URL || 'https://seven77-backend-cn0p.onrender.com';
+    return host;
   });
   const [showHostModal, setShowHostModal] = useState(false);
   const [tempHost, setTempHost] = useState(apiHost);
@@ -1021,7 +1022,15 @@ export default function App() {
             </button>
           </form>
 
-          
+          <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => { setTempHost(apiHost); setShowHostModal(true); }}
+              style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+            >
+              ⚙️ Server: {apiHost}
+            </button>
+          </div>
         </div>
 
         {/* Dynamic API Host Modals */}
