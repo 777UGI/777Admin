@@ -14,6 +14,8 @@ import '../../features/transactions/history_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/profile/profile_screen.dart';
 
+import '../../features/home/main_shell_screen.dart';
+
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
@@ -49,19 +51,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/signup',
-        builder: (context, state) => const SignupScreen(),
+        builder: (context, state) {
+          final refCode = state.uri.queryParameters['ref'] ?? state.uri.queryParameters['referralCode'];
+          return SignupScreen(initialReferralCode: refCode);
+        },
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/bank-details',
-        builder: (context, state) => const BankDetailsScreen(),
-      ),
-      GoRoute(
-        path: '/deposit',
-        builder: (context, state) => const DepositScreen(),
+      ShellRoute(
+        builder: (context, state, child) => MainShellScreen(child: child),
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/bank-details',
+            builder: (context, state) => const BankDetailsScreen(),
+          ),
+          GoRoute(
+            path: '/deposit',
+            builder: (context, state) => const DepositScreen(),
+          ),
+          GoRoute(
+            path: '/history',
+            builder: (context, state) => const HistoryScreen(),
+          ),
+          GoRoute(
+            path: '/notifications',
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/tracker/:id',
@@ -69,18 +91,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? '';
           return TrackerScreen(depositId: id);
         },
-      ),
-      GoRoute(
-        path: '/history',
-        builder: (context, state) => const HistoryScreen(),
-      ),
-      GoRoute(
-        path: '/notifications',
-        builder: (context, state) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
       ),
     ],
     redirect: (context, state) {

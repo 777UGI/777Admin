@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../auth/auth_provider.dart';
@@ -52,7 +53,9 @@ class SettingsNotifier extends StateNotifier<SettingsData> {
       state = state.copyWith(loading: true);
     }
     try {
+      debugPrint('[RateProvider] Calling GET /api/public/settings...');
       final response = await _apiClient.dio.get('/api/public/settings');
+      debugPrint('[RateProvider] Got settings response: ${response.statusCode}, ${response.data}');
       if (response.statusCode == 200 && response.data != null) {
         final rate =
             (response.data['exchangeRate'] as num?)?.toDouble() ?? 88.5;
@@ -68,6 +71,7 @@ class SettingsNotifier extends StateNotifier<SettingsData> {
         );
       }
     } catch (e) {
+      debugPrint('[RateProvider] Error fetching settings: $e');
       if (!isPolling) {
         state = state.copyWith(
           loading: false,

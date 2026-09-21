@@ -173,7 +173,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         : 'Resend code in ${_secondsRemaining}s',
                     style: TextStyle(
                       fontSize: 13,
-                      color: _canResend ? textSec : textSec.withOpacity(0.7),
+                      color: _canResend ? textSec : textSec.withValues(alpha: 0.7),
                     ),
                   ),
                   TextButton(
@@ -210,7 +210,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: activeGreen.withOpacity(0.15),
+                      color: activeGreen.withValues(alpha: 0.15),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -242,16 +242,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  'Default verification code is 123456',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: textSec,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
             ],
           ),
         ),

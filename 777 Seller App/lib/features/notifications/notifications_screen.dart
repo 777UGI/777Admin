@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,9 +19,19 @@ class NotificationsScreen extends ConsumerWidget {
     final activeGreen = isDark ? const Color(0xFF00E676) : const Color(0xFF0F9D58);
     final unreadBg = isDark ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFFE8F5E9);
 
-    return AppScaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: AppScaffold(
       backgroundColor: bgClr,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/home'),
+        ),
         title: const Text('Notifications'),
         backgroundColor: bgClr,
         iconTheme: IconThemeData(color: textPrim),
@@ -52,23 +63,58 @@ class NotificationsScreen extends ConsumerWidget {
                 final date = DateTime.tryParse(item.timestamp)?.toLocal() ?? DateTime.now();
                 final timeAgo = DateFormat('dd MMM, hh:mm a').format(date);
 
-                return Card(
+                final isTrade = item.title.toLowerCase().contains('trade') || item.title.toLowerCase().contains('paid');
+                final isSystem = item.title.toLowerCase().contains('system') || item.title.toLowerCase().contains('verified');
+                final iconData = isTrade ? Icons.currency_exchange_rounded : (isSystem ? Icons.admin_panel_settings_rounded : Icons.notifications_active_rounded);
+                final iconColor = isTrade ? activeGreen : (isSystem ? Colors.blue : Colors.orange);
+
+                return Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  color: item.isRead ? cardClr : unreadBg,
+                  decoration: BoxDecoration(
+                    color: item.isRead ? cardClr : unreadBg,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     onTap: () => ref.read(notificationsNotifierProvider.notifier).markAsRead(item.id),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            item.title.contains('Sent') || item.title.contains('Paid')
-                                ? Icons.account_balance
-                                : (item.title.contains('Deposit') ? Icons.savings : Icons.verified_user),
-                            color: activeGreen,
-                            size: 24,
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: iconColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(iconData, color: iconColor, size: 20),
+                              ),
+                              if (!item.isRead)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: cardClr, width: 2),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -76,19 +122,23 @@ class NotificationsScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      item.title,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: item.isRead ? FontWeight.normal : FontWeight.bold,
-                                        color: textPrim,
+                                    Expanded(
+                                      child: Text(
+                                        item.title,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w900,
+                                          color: textPrim,
+                                        ),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
                                       timeAgo,
-                                      style: TextStyle(fontSize: 10, color: textSec),
+                                      style: TextStyle(fontSize: 10, color: textSec, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -97,7 +147,8 @@ class NotificationsScreen extends ConsumerWidget {
                                   item.body,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: item.isRead ? textSec : textPrim,
+                                    color: item.isRead ? textSec : textPrim.withOpacity(0.9),
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
@@ -110,6 +161,7 @@ class NotificationsScreen extends ConsumerWidget {
                 );
               },
             ),
+    ),
     );
   }
 }

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>777 USDT Gateway | Create Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030712;
+      --card: #0f172a;
+      --input-bg: #080d1a;
+      --border: rgba(255, 255, 255, 0.1);
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --text: #ffffff;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden; /* STRICTLY NO SCROLL */
+      /* Exact Seller App Indian Tricolor Gradient (Saffron, White, Green) */
+      background: linear-gradient(135deg, rgba(255, 153, 51, 0.85) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(19, 136, 8, 0.85) 100%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .main-card {
+      width: min(420px, 92vw);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px 24px;
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.85);
+      position: relative;
+    }
+
+    .header-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .seller-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 13px;
+      object-fit: cover;
+      margin-bottom: 8px;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+    }
+
+    .app-name {
+      font-size: 19px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    .app-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .form-row {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding-left: 2px;
+    }
+
+    .input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-ctrl {
+      width: 100%;
+      height: 42px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 14px;
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-ctrl:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .input-ctrl::placeholder {
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .eye-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .err-hint {
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 2px;
+      padding-left: 2px;
+      display: none;
+    }
+
+    .err-banner {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .reg-btn {
+      width: 100%;
+      height: 44px;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .reg-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .reg-btn:active {
+      transform: scale(0.99);
+    }
+
+    .reg-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loader {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Success Card */
+    .success-panel {
+      display: none;
+      text-align: center;
+      padding: 10px 0;
+      animation: popIn 0.3s ease forwards;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .check-icon {
+      width: 58px;
+      height: 58px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 28px;
+      color: var(--primary);
+    }
+
+    .done-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .done-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+
+    .dl-btn {
+      display: block;
+      width: 100%;
+      height: 44px;
+      line-height: 44px;
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: background 0.2s;
+    }
+
+    .dl-btn:hover {
+      background: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="main-card">
+
+    <!-- Form Section -->
+    <div id="formSection">
+      <div class="header-area">
+        <img src="/public/assets/777logo.png?v=2" alt="777 Logo" class="seller-logo" onerror="this.src='/public/assets/usdt_logo.png'">
+        <h1 class="app-name">777 USDT Gateway</h1>
+        <p class="app-sub">Create your seller account</p>
+      </div>
+
+      <div class="err-banner" id="errBanner"></div>
+
+      <form id="signupForm" onsubmit="onFormSubmit(event)">
+
+        <!-- Name -->
+        <div class="form-row">
+          <label class="form-lbl" for="uName">Name</label>
+          <div class="input-box">
+            <input type="text" id="uName" class="input-ctrl" placeholder="Enter your full name" required>
+          </div>
+          <div class="err-hint" id="nameHint">Please enter your name</div>
+        </div>
+
+        <!-- Phone Number -->
+        <div class="form-row">
+          <label class="form-lbl" for="uPhone">Phone Number</label>
+          <div class="input-box">
+            <input type="tel" id="uPhone" class="input-ctrl" placeholder="10-digit mobile number" maxlength="10" required>
+          </div>
+          <div class="err-hint" id="phoneHint">Please enter a valid 10-digit number</div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-row">
+          <label class="form-lbl" for="uEmail">Email</label>
+          <div class="input-box">
+            <input type="email" id="uEmail" class="input-ctrl" placeholder="Enter your email address" required>
+          </div>
+          <div class="err-hint" id="emailHint">Please enter a valid email</div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-row">
+          <label class="form-lbl" for="uPass">Password</label>
+          <div class="input-box">
+            <input type="password" id="uPass" class="input-ctrl" placeholder="Minimum 6 characters" minlength="6" required>
+            <button type="button" class="eye-btn" onclick="switchPass('uPass', this)">👁️</button>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-row">
+          <label class="form-lbl" for="uConfPass">Confirm Password</label>
+          <div class="input-box">
+            <input type="password" id="uConfPass" class="input-ctrl" placeholder="Re-enter password" minlength="6" required>
+            <button type="button" class="eye-btn" onclick="switchPass('uConfPass', this)">👁️</button>
+          </div>
+          <div class="err-hint" id="passHint">Passwords do not match</div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="reg-btn" id="regBtn">
+          <span id="btnTxt">Register</span>
+          <div class="loader" id="btnLoader"></div>
+        </button>
+
+      </form>
+    </div>
+
+    <!-- Success Panel -->
+    <div class="success-panel" id="successPanel">
+      <div class="check-icon">✓</div>
+      <h2 class="done-title">Account Created!</h2>
+      <p class="done-sub">Your seller account has been registered successfully. Download the app to login.</p>
+      <a href="/download/seller-app.apk" class="dl-btn">Download Seller App (APK)</a>
+    </div>
+
+  </div>
+
+  <script>
+    // In-App Browser Auto-Redirect (Telegram / Instagram / FB to Native Phone Browser)
+    (function checkInAppBrowser() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      const isInApp = (ua.indexOf("Telegram") > -1) || (ua.indexOf("Instagram") > -1) || (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1);
+      if (isInApp && /Android/i.test(ua)) {
+        const targetUrl = window.location.href.replace(/^https?:\/\//, '');
+        window.location.href = "intent://" + targetUrl + "#Intent;scheme=https;package=com.android.chrome;end;";
+      }
+    })();
+
+    // Silent Referral Tracking (URL query or hash param)
+    let partnerRef = '';
+    function initReferral() {
+      const q = new URLSearchParams(window.location.search);
+      let r = q.get('ref');
+      if (!r && window.location.hash.includes('ref=')) {
+        const hashQ = window.location.hash.split('?')[1];
+        if (hashQ) {
+          const hp = new URLSearchParams(hashQ);
+          r = hp.get('ref');
+        }
+      }
+      if (r) {
+        partnerRef = r.trim();
+        localStorage.setItem('777_partner_ref', partnerRef);
+      } else {
+        partnerRef = localStorage.getItem('777_partner_ref') || '';
+      }
+    }
+    initReferral();
+
+    function switchPass(id, b) {
+      const f = document.getElementById(id);
+      if (f.type === 'password') {
+        f.type = 'text';
+        b.textContent = '🔒';
+      } else {
+        f.type = 'password';
+        b.textContent = '👁️';
+      }
+    }
+
+    async function onFormSubmit(ev) {
+      ev.preventDefault();
+
+      const name = document.getElementById('uName').value.trim();
+      const phone = document.getElementById('uPhone').value.trim();
+      const email = document.getElementById('uEmail').value.trim();
+      const pass = document.getElementById('uPass').value;
+      const conf = document.getElementById('uConfPass').value;
+
+      const banner = document.getElementById('errBanner');
+      banner.style.display = 'none';
+
+      if (pass !== conf) {
+        document.getElementById('passHint').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('passHint').style.display = 'none';
+      }
+
+      if (phone.length < 10) {
+        document.getElementById('phoneHint').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('phoneHint').style.display = 'none';
+      }
+
+      const btn = document.getElementById('regBtn');
+      const txt = document.getElementById('btnTxt');
+      const loader = document.getElementById('btnLoader');
+
+      btn.disabled = true;
+      txt.style.display = 'none';
+      loader.style.display = 'block';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            phone: phone,
+            email: email,
+            password: pass,
+            role: 'seller',
+            referralCode: partnerRef
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          document.getElementById('formSection').style.display = 'none';
+          document.getElementById('successPanel').style.display = 'block';
+        } else {
+          banner.textContent = data.error || 'Registration failed. Please try again.';
+          banner.style.display = 'block';
+          btn.disabled = false;
+          txt.style.display = 'block';
+          loader.style.display = 'none';
+        }
+      } catch (e) {
+        banner.textContent = 'Connection error. Please try again.';
+        banner.style.display = 'block';
+        btn.disabled = false;
+        txt.style.display = 'block';
+        loader.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

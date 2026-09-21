@@ -33,29 +33,7 @@ class NotificationsNotifier extends StateNotifier<List<NotificationItem>> {
   }
 
   void _loadMockNotifications() {
-    state = [
-      NotificationItem(
-        id: '1',
-        title: 'INR Payout Sent 🏦',
-        body:
-            'Payout of ₹44,250.00 for Deposit ID cf35ebd1 has been processed. UTR Ref: UTR_MOCK_112233.',
-        timestamp: '2026-07-18T14:30:00Z',
-      ),
-      NotificationItem(
-        id: '2',
-        title: 'USDT Deposit Verified ✅',
-        body:
-            'Your deposit of 500.00 USDT on TRC20 has been verified by the compliance desk.',
-        timestamp: '2026-07-18T14:15:00Z',
-      ),
-      NotificationItem(
-        id: '3',
-        title: 'KYC Verification Approved 🎉',
-        body:
-            'Congratulations! Your PAN and Aadhaar identity documents have been approved. Deposit tools unlocked.',
-        timestamp: '2026-07-18T12:00:00Z',
-      ),
-    ];
+    state = [];
   }
 
   void _initializeFCM() {

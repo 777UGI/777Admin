@@ -7,5 +7,9 @@ class EnvConfig {
   
   static bool get isTestnet => false;
 
-  static String get apiBaseUrl => 'https://api.777gateway.com'; // Production API endpoint
+  // Primary: 127.0.0.1:5001 (ADB reverse via USB on phone)
+  static String get apiBaseUrl => 'http://127.0.0.1:5001';
+  
+  // Secondary fallback: Current Mac LAN IP on Wi-Fi
+  static String get lanBaseUrl => 'http://10.116.176.136:5001';
 }

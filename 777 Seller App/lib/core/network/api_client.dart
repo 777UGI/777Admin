@@ -31,6 +31,7 @@ class ApiClient {
           // Dynamic base URL check (allows overriding localhost on devices)
           final hostOverride = await _secureStorage.getApiHostOverride();
           options.baseUrl = hostOverride ?? EnvConfig.apiBaseUrl;
+          debugPrint('[ApiClient] Interceptor set baseUrl: ${options.baseUrl}, path: ${options.path}');
 
           final token = await _secureStorage.getAccessToken();
           if (token != null) {
@@ -39,6 +40,20 @@ class ApiClient {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
+          // Automatic LAN fallback if USB localhost is unreachable
+          if ((error.type == DioExceptionType.connectionTimeout ||
+                  error.type == DioExceptionType.connectionError) &&
+              error.requestOptions.baseUrl == EnvConfig.apiBaseUrl &&
+              error.requestOptions.extra['retried_lan'] != true) {
+            try {
+              final newOptions = error.requestOptions;
+              newOptions.baseUrl = EnvConfig.lanBaseUrl;
+              newOptions.extra['retried_lan'] = true;
+              final response = await dio.fetch(newOptions);
+              return handler.resolve(response);
+            } catch (_) {}
+          }
+
           // Check for 401 Unauthorized
           if (error.response?.statusCode == 401) {
             final refreshed = await _attemptTokenRefresh();

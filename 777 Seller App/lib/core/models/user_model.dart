@@ -21,27 +21,27 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      phone: json['phone'] as String,
-      email: json['email'] as String,
-      role: json['role'] as String,
-      kycStatus: json['kycStatus'] as String? ?? 'none',
-      referredByAgentId: json['referredByAgentId'] as String?,
-      createdAt: json['createdAt'] as String,
+      id: (json["id"] ?? json["_id"])?.toString() ?? "",
+      name: json["name"]?.toString() ?? "",
+      phone: json["phone"]?.toString() ?? "",
+      email: json["email"]?.toString() ?? "",
+      role: json["role"]?.toString() ?? "seller",
+      kycStatus: json["kycStatus"]?.toString() ?? "none",
+      referredByAgentId: json["referredByAgentId"]?.toString(),
+      createdAt: json["createdAt"]?.toString() ?? DateTime.now().toIso8601String(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'phone': phone,
-      'email': email,
-      'role': role,
-      'kycStatus': kycStatus,
-      'referredByAgentId': referredByAgentId,
-      'createdAt': createdAt,
+      "id": id,
+      "name": name,
+      "phone": phone,
+      "email": email,
+      "role": role,
+      "kycStatus": kycStatus,
+      "referredByAgentId": referredByAgentId,
+      "createdAt": createdAt,
     };
   }
 

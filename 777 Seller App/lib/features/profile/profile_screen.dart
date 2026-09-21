@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../shared/widgets/app_scaffold.dart';
 import '../auth/auth_provider.dart';
+import '../home/rate_provider.dart';
+import '../transactions/transactions_provider.dart';
 import 'locale_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -17,262 +20,217 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _launchTelegram() async {
-    // Telegram Support link
-    final url = Uri.parse('https://t.me/Gateway777Support');
+    final nativeUrl = Uri.parse('tg://resolve?domain=therockymerchant');
+    final webUrl = Uri.parse('https://t.me/therockymerchant');
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch support link';
+      final launched = await launchUrl(nativeUrl, mode: LaunchMode.externalNonBrowserApplication);
+      if (!launched) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Could not open Telegram. Contact support at support@777.com',
-            ),
-          ),
-        );
+    } catch (_) {
+      try {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open Telegram.')),
+          );
+        }
       }
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final user = ref.watch(authProvider).user;
     final locale = ref.watch(localeProvider);
     final isHindi = locale.languageCode == 'hi';
     final themeMode = ref.watch(themeModeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgClr = isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8F9FA);
-    final cardClr = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderClr = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
-    final textPrim = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B);
-    final textSec = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-
     return AppScaffold(
-      backgroundColor: bgClr,
       appBar: AppBar(
-        title: Text(
-          isHindi ? 'प्रोफ़ाइल सेटिंग्स' : 'Profile Settings',
-          style: TextStyle(color: textPrim),
-        ),
-        backgroundColor: bgClr,
-        iconTheme: IconThemeData(color: textPrim),
+        title: Text(isHindi ? 'प्रोफ़ाइल' : 'Profile'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           children: [
-            // Profile Info Header Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardClr,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderClr),
-              ),
+            // User Header
+            Center(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: isDark
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFE8F0FE),
-                    child: Icon(
-                      Icons.person,
-                      size: 40,
-                      color: isDark
-                          ? const Color(0xFF38BDF8)
-                          : const Color(0xFF1A73E8),
-                    ),
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: theme.colorScheme.primary, width: 2),
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                          child: Icon(Icons.person_rounded, size: 60, color: theme.colorScheme.primary),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
+                          ),
+                          child: const Icon(Icons.verified_rounded, size: 18, color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   Text(
                     user?.name ?? 'Gateway Merchant',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: textPrim,
-                    ),
+                    style: theme.textTheme.headlineMedium,
                   ),
-                  const SizedBox(height: 4),
                   Text(
                     user?.email ?? 'email@example.com',
-                    style: TextStyle(fontSize: 13, color: textSec),
+                    style: theme.textTheme.bodyMedium,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '+91 ${user?.phone ?? "9999999999"}',
-                    style: TextStyle(fontSize: 13, color: textSec),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E676).withOpacity(0.1),
+                      color: theme.colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       isHindi ? 'सत्यापित मर्चेंट' : 'ACTIVE MERCHANT',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF00E676),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
-            // Profile Options list
+            // Settings List
+            Align(alignment: Alignment.centerLeft, child: Text('App Preferences', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold))),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: cardClr,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderClr),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
               ),
-              child: Column(
-                children: [
-                  // Language Toggle Option
-                  ListTile(
-                    leading: Icon(Icons.translate, color: textSec),
-                    title: Text(
-                      isHindi ? 'भाषा (Language)' : 'Language',
-                      style: TextStyle(color: textPrim),
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    _buildSettingTile(
+                      context,
+                      icon: isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      title: isHindi ? 'डार्क थीम' : 'Dark Theme',
+                      subtitle: isDarkMode ? 'Dark mode ON' : 'Light mode ON',
+                      trailing: Switch(
+                        value: isDarkMode,
+                        onChanged: (val) => ref.read(themeModeProvider.notifier).toggleTheme(),
+                      ),
                     ),
-                    subtitle: Text(
-                      isHindi
-                          ? 'वर्तमान भाषा: हिंदी'
-                          : 'Current Language: English',
-                      style: TextStyle(color: textSec),
-                    ),
-                    trailing: Switch(
-                      value: isHindi,
-                      onChanged: (val) {
-                        ref.read(localeProvider.notifier).toggleLocale();
-                      },
-                      activeThumbColor: const Color(0xFF00E676),
-                    ),
-                  ),
-                  Divider(height: 1, indent: 56, color: borderClr),
-
-                  // Dark Theme Toggle Option
-                  ListTile(
-                    leading: Icon(
-                      isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                      color: textSec,
-                    ),
-                    title: Text(
-                      isHindi ? 'डार्क थीम (Dark Theme)' : 'Dark Theme',
-                      style: TextStyle(color: textPrim),
-                    ),
-                    subtitle: Text(
-                      isHindi
-                          ? (isDarkMode
-                                ? 'डार्क मोड सक्रिय'
-                                : 'लाइट मोड सक्रिय')
-                          : (isDarkMode
-                                ? 'Dark mode active'
-                                : 'Light mode active'),
-                      style: TextStyle(color: textSec),
-                    ),
-                    trailing: Switch(
-                      value: isDarkMode,
-                      onChanged: (val) {
-                        ref.read(themeModeProvider.notifier).toggleTheme();
-                      },
-                      activeThumbColor: const Color(0xFF00E676),
-                    ),
-                  ),
-                  Divider(height: 1, indent: 56, color: borderClr),
-
-                  // Telegram Support Redirect
-                  ListTile(
-                    leading: Icon(Icons.send_rounded, color: textSec),
-                    title: Text(
-                      isHindi
-                          ? 'सहायता केंद्र (Telegram)'
-                          : 'Support Chat (Telegram)',
-                      style: TextStyle(color: textPrim),
-                    ),
-                    subtitle: Text(
-                      isHindi
-                          ? 'हमारे शिकायत अधिकारियों से संपर्क करें'
-                          : 'Chat directly with support desks',
-                      style: TextStyle(color: textSec),
-                    ),
-                    trailing: Icon(Icons.chevron_right, color: textSec),
-                    onTap: _launchTelegram,
-                  ),
-                  Divider(height: 1, indent: 56, color: borderClr),
-
-                  // Change Bank Account Info / Payout Method
-                  ListTile(
-                    leading: Icon(Icons.account_balance, color: textSec),
-                    title: Text(
-                      isHindi
-                          ? 'बैंक खाता / भुगतान विधि बदलें'
-                          : 'Change Bank / Payout Method',
-                      style: TextStyle(color: textPrim),
-                    ),
-                    subtitle: Text(
-                      isHindi
-                          ? 'अपना बैंक खाता और UPI विवरण अपडेट करें'
-                          : 'Update your bank account & UPI details',
-                      style: TextStyle(color: textSec),
-                    ),
-                    trailing: Icon(Icons.chevron_right, color: textSec),
-                    onTap: () {
-                      context.push('/bank-details');
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
-
-            // Sign out button
-            OutlinedButton(
-              onPressed: () async {
-                await ref.read(authProvider.notifier).logout();
-                if (context.mounted) {
-                  context.go('/login');
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red, width: 1),
+            Align(alignment: Alignment.centerLeft, child: Text('Account & Support', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold))),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
               ),
-              child: Text(isHindi ? 'लॉग आउट' : 'Sign Out'),
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    _buildSettingTile(
+                      context,
+                      icon: Icons.account_balance_rounded,
+                      title: isHindi ? 'भुगतान विधि' : 'Payout Method',
+                      subtitle: isHindi ? 'बैंक और UPI विवरण' : 'Bank & UPI details',
+                      onTap: () => context.push('/bank-details'),
+                    ),
+                    const Divider(indent: 56, height: 1),
+                    _buildSettingTile(
+                      context,
+                      icon: Icons.support_agent_rounded,
+                      title: isHindi ? 'सहायता' : 'Support',
+                      subtitle: isHindi ? 'टेलीग्राम सहायता' : 'Telegram Chat',
+                      onTap: _launchTelegram,
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 32),
 
-            // Version info footer
-            Text(
-              'App Version: 9.1.6 (OTC Production Build)',
-              style: TextStyle(
-                fontSize: 12,
-                color: textSec,
-                fontWeight: FontWeight.w500,
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await ref.read(authProvider.notifier).logout();
+                  if (context.mounted) context.go('/login');
+                },
+                icon: const Icon(Icons.logout_rounded, size: 20),
+                label: Text(isHindi ? 'लॉग आउट' : 'Sign Out', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                  side: BorderSide(color: theme.colorScheme.error),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
               ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'App Version: 9.1.6 (Production)',
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSettingTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+      ),
+      title: Text(title, style: theme.textTheme.titleSmall),
+      subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
+      trailing: trailing ?? const Icon(Icons.chevron_right_rounded, size: 20),
     );
   }
 }

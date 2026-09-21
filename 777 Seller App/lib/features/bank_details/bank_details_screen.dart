@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/storage/screen_security.dart';
 import '../../shared/widgets/app_scaffold.dart';
 import 'bank_provider.dart';
+import '../../core/constants/indian_geography.dart';
 
 class BankDetailsScreen extends ConsumerStatefulWidget {
   const BankDetailsScreen({super.key});
@@ -277,100 +278,13 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
   String? _selectedState;
   String? _selectedDistrict;
 
-  static const Map<String, List<String>> _indianStatesDistricts = {
-    'Rajasthan': [
-      'Jaipur',
-      'Jodhpur',
-      'Udaipur',
-      'Ajmer',
-      'Bikaner',
-      'Kota',
-      'Alwar',
-      'Sikar',
-      'Bhilwara',
-      'Jaisalmer',
-      'Barmer',
-      'Chittorgarh',
-    ],
-    'Maharashtra': [
-      'Mumbai',
-      'Pune',
-      'Nagpur',
-      'Thane',
-      'Nashik',
-      'Aurangabad',
-      'Solapur',
-      'Amravati',
-      'Kolhapur',
-      'Navi Mumbai',
-    ],
-    'Delhi': [
-      'New Delhi',
-      'North Delhi',
-      'South Delhi',
-      'East Delhi',
-      'West Delhi',
-      'Central Delhi',
-    ],
-    'Uttar Pradesh': [
-      'Lucknow',
-      'Kanpur',
-      'Noida',
-      'Ghaziabad',
-      'Agra',
-      'Varanasi',
-      'Meerut',
-      'Prayagraj',
-      'Bareilly',
-      'Aligarh',
-    ],
-    'Karnataka': [
-      'Bangalore',
-      'Mysore',
-      'Hubli-Dharwad',
-      'Mangalore',
-      'Belgaum',
-      'Gulbarga',
-      'Davanagere',
-      'Bellary',
-    ],
-    'Gujarat': [
-      'Ahmedabad',
-      'Surat',
-      'Vadodara',
-      'Rajkot',
-      'Gandhinagar',
-      'Bhavnagar',
-      'Jamnagar',
-      'Junagadh',
-    ],
-    'Haryana': [
-      'Gurugram',
-      'Faridabad',
-      'Panipat',
-      'Ambala',
-      'Yamunanagar',
-      'Rohtak',
-      'Hisar',
-      'Karnal',
-    ],
-    'Punjab': [
-      'Ludhiana',
-      'Amritsar',
-      'Jalandhar',
-      'Patiala',
-      'Bathinda',
-      'Mohali',
-      'Pathankot',
-    ],
-  };
 
   void _onStateChanged(String? newState) {
     if (newState != null) {
       setState(() {
         _selectedState = newState;
         _stateController.text = newState;
-        final districts = _indianStatesDistricts[newState] ?? [];
+        final districts = IndianGeography.statesAndDistricts[newState] ?? [];
         _selectedDistrict = districts.isNotEmpty ? districts.first : null;
         _districtController.text = _selectedDistrict ?? '';
       });
@@ -390,20 +304,34 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
         "Location: $districtStr, $stateStr\n\n"
         "Please authorize my Hawala payout.";
 
-    final url = Uri.parse('https://t.me/Gateway777Support?text=${Uri.encodeComponent(messageText)}');
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch link';
-      }
-    } catch (e) {
+      await Clipboard.setData(ClipboardData(text: messageText));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not open Telegram. Contact support at support@777.com'),
+            content: Text('📋 Payout details copied! Just paste in Telegram chat.'),
+            backgroundColor: Color(0xFF00E676),
           ),
         );
+      }
+    } catch (_) {}
+
+    final nativeUrl = Uri.parse('tg://resolve?domain=therockymerchant');
+    final webUrl = Uri.parse('https://t.me/therockymerchant');
+    try {
+      final launched = await launchUrl(nativeUrl, mode: LaunchMode.externalNonBrowserApplication);
+      if (!launched) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open Telegram. Contact support at support@777.com')),
+          );
+        }
       }
     }
   }
@@ -606,16 +534,11 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Password is required';
                         }
-                        if (value != '123456') {
-                          return 'Incorrect password. (Use 123456 for demo)';
+                        if (value.length < 4) {
+                          return 'Password must be at least 4 characters';
                         }
                         return null;
                       },
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Demo hint: password is 123456',
-                      style: TextStyle(fontSize: 11, color: Colors.orangeAccent),
                     ),
                     if (state.error != null)
                       Padding(
@@ -700,17 +623,31 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
         final saved = await ref
             .read(bankDetailsNotifierProvider.notifier)
             .saveBankDetails();
+        if (dialogContext.mounted) {
+          Navigator.pop(dialogContext); // Always close dialog!
+        }
         if (saved) {
-          if (dialogContext.mounted) {
-            Navigator.pop(dialogContext); // Close dialog
-          }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Payout credentials updated successfully.'),
+                backgroundColor: Color(0xFF00E676),
+                content: Text(
+                  'Payout credentials updated successfully.',
+                  style: TextStyle(color: Color(0xFF0B0F19), fontWeight: FontWeight.bold),
+                ),
               ),
             );
-            context.pop(); // Go back to Home
+            context.go('/home'); // Go back to Home cleanly
+          }
+        } else {
+          if (mounted) {
+            final errorMsg = ref.read(bankDetailsNotifierProvider).error ?? 'Failed to update payout details. Please try again.';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.redAccent,
+                content: Text(errorMsg),
+              ),
+            );
           }
         }
       }
@@ -729,9 +666,19 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
     final textSec = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     final activeGreen = isDark ? const Color(0xFF00E676) : const Color(0xFF0F9D58);
 
-    return AppScaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: AppScaffold(
       backgroundColor: bgClr,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/home'),
+        ),
         title: const Text('Bank & Payout Setup'),
         backgroundColor: bgClr,
         iconTheme: IconThemeData(color: textPrim),
@@ -762,7 +709,7 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Secure Bank Config: Changes will trigger SMS verification protocols. Screenshots are disabled.',
+                        '⚠️ Enter details carefully. 777 Gateway is not responsible for wrong transfers.',
                         style: TextStyle(
                           color: Color(0xFFEF4444),
                           fontSize: 13,
@@ -1044,93 +991,75 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
                   ),
                   const SizedBox(height: 24),
                 ] else ...[
-                  // Hawala Asset Selection Fields
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedAssetType,
-                    dropdownColor: cardClr,
-                    style: TextStyle(color: textPrim, fontSize: 16),
-                    decoration: InputDecoration(
-                      labelText: 'Select Asset Type',
-                      labelStyle: TextStyle(color: textSec),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'Gold', child: Text('Gold')),
-                      DropdownMenuItem(value: 'Silver', child: Text('Silver')),
-                      DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedAssetType = val;
-                        });
-                      }
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select an asset type';
-                      }
-                      return null;
+                  // Hawala Asset Selection Fields (Custom Bottom Sheet Selector)
+                  _buildBottomSheetSelector(
+                    label: 'Select Asset Type',
+                    value: _selectedAssetType,
+                    onTap: () {
+                      _showSelectionBottomSheet(
+                        title: 'Select Asset Type',
+                        items: ['Gold', 'Silver', 'Cash'],
+                        selectedValue: _selectedAssetType,
+                        onSelected: (val) => setState(() => _selectedAssetType = val),
+                      );
                     },
                   ),
+                  if (_primaryMethod == 'hawala' && _selectedAssetType == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 12),
+                      child: Text('Please select an asset type', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+                    ),
                   const SizedBox(height: 16),
 
-                  // State Dropdown (Cascading source)
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedState,
-                    key: ValueKey('state_$_selectedState'),
-                    dropdownColor: cardClr,
-                    style: TextStyle(color: textPrim, fontSize: 16),
-                    decoration: InputDecoration(
-                      labelText: 'State',
-                      labelStyle: TextStyle(color: textSec),
-                    ),
-                    items: _indianStatesDistricts.keys.map((st) {
-                      return DropdownMenuItem<String>(
-                        value: st,
-                        child: Text(st),
+                  // State Dropdown
+                  _buildBottomSheetSelector(
+                    label: 'State',
+                    value: _selectedState,
+                    onTap: () {
+                      _showSelectionBottomSheet(
+                        title: 'Select State',
+                        items: IndianGeography.statesAndDistricts.keys.toList(),
+                        selectedValue: _selectedState,
+                        onSelected: (val) {
+                          _onStateChanged(val);
+                        },
                       );
-                    }).toList(),
-                    onChanged: _onStateChanged,
-                    validator: (value) {
-                      if (_primaryMethod == 'hawala' && value == null) {
-                        return 'Please select a state';
-                      }
-                      return null;
                     },
                   ),
+                  if (_primaryMethod == 'hawala' && _selectedState == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 12),
+                      child: Text('Please select a state', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+                    ),
                   const SizedBox(height: 16),
 
-                  // District Dropdown (Cascaded destination)
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedDistrict,
-                    key: ValueKey('district_${_selectedState}_$_selectedDistrict'),
-                    dropdownColor: cardClr,
-                    style: TextStyle(color: textPrim, fontSize: 16),
-                    decoration: InputDecoration(
-                      labelText: 'District',
-                      labelStyle: TextStyle(color: textSec),
-                    ),
-                    items: (_indianStatesDistricts[_selectedState] ?? []).map((dst) {
-                      return DropdownMenuItem<String>(
-                        value: dst,
-                        child: Text(dst),
+                  // District Dropdown
+                  _buildBottomSheetSelector(
+                    label: 'District',
+                    value: _selectedDistrict,
+                    onTap: () {
+                      if (_selectedState == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a state first')));
+                        return;
+                      }
+                      _showSelectionBottomSheet(
+                        title: 'Select District',
+                        items: IndianGeography.statesAndDistricts[_selectedState] ?? [],
+                        selectedValue: _selectedDistrict,
+                        onSelected: (val) {
+                          setState(() {
+                            _selectedDistrict = val;
+                            _districtController.text = val;
+                          });
+                        },
                       );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedDistrict = val;
-                          _districtController.text = val;
-                        });
-                      }
-                    },
-                    validator: (value) {
-                      if (_primaryMethod == 'hawala' && value == null) {
-                        return 'Please select a district';
-                      }
-                      return null;
                     },
                   ),
+                  if (_primaryMethod == 'hawala' && _selectedDistrict == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 12),
+                      child: Text('Please select a district', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+                    ),
                   const SizedBox(height: 24),
 
                   // Transaction Proof Section
@@ -1542,6 +1471,134 @@ class _BankDetailsScreenState extends ConsumerState<BankDetailsScreen> {
                 ),
             ],
           ),
+        ),
+      ),
+    ),
+  );
+}
+
+  void _showSelectionBottomSheet({
+    required String title,
+    required List<String> items,
+    required String? selectedValue,
+    required Function(String) onSelected,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgClr = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrim = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgClr,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: textPrim,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final isSelected = item == selectedValue;
+                      return ListTile(
+                        title: Text(
+                          item,
+                          style: TextStyle(
+                            color: isSelected ? const Color(0xFF00E676) : textPrim,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle, color: Color(0xFF00E676))
+                            : null,
+                        onTap: () {
+                          Navigator.pop(context);
+                          onSelected(item);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomSheetSelector({
+    required String label,
+    required String? value,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrim = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B);
+    final textSec = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final borderClr = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderClr),
+          color: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF1F5F9),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(color: textSec, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value ?? 'Select',
+                  style: TextStyle(
+                    color: value != null ? textPrim : textSec,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            Icon(Icons.arrow_drop_down_circle, color: textSec, size: 20),
+          ],
         ),
       ),
     );

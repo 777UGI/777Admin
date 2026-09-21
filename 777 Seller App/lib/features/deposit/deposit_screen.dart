@@ -38,7 +38,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   String _depositAddress = '';
 
   Timer? _countdownTimer;
-  int _secondsRemaining = 900; // 15 minutes
+  int _secondsRemaining = 900; 
   bool _isRateExpired = false;
 
   @override
@@ -57,13 +57,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
-        setState(() {
-          _secondsRemaining--;
-        });
+        setState(() => _secondsRemaining--);
       } else {
-        setState(() {
-          _isRateExpired = true;
-        });
+        setState(() => _isRateExpired = true);
         _countdownTimer?.cancel();
       }
     });
@@ -71,14 +67,12 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
 
   void _lockRateAndAddress() {
     if (!_amountFormKey.currentState!.validate()) return;
-
     final rateSettings = ref.read(settingsNotifierProvider);
     final amount = double.tryParse(_amountController.text) ?? 0.0;
-
     setState(() {
       _lockedRate = rateSettings.exchangeRate;
       _lockedInrAmount = amount * _lockedRate;
-      _depositAddress = rateSettings.wallets[_selectedNetwork] ?? _fallbackAddresses[_selectedNetwork] ?? 'Address Loading Error';
+      _depositAddress = rateSettings.wallets[_selectedNetwork] ?? _fallbackAddresses[_selectedNetwork] ?? 'Error';
       _rateLocked = true;
     });
     _startCountdown();
@@ -87,7 +81,6 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   void _refreshRate() {
     final rateSettings = ref.read(settingsNotifierProvider);
     final amount = double.tryParse(_amountController.text) ?? 0.0;
-    
     setState(() {
       _lockedRate = rateSettings.exchangeRate;
       _lockedInrAmount = amount * _lockedRate;
@@ -102,481 +95,194 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   }
 
   String _formatIndianCurrency(double value) {
-    final formatter = NumberFormat.currency(
-      locale: 'en_IN',
-      symbol: '₹',
-      decimalDigits: 2,
-    );
-    return formatter.format(value);
+    return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2).format(value);
   }
 
   Future<void> _submitDepositProof() async {
     if (!_proofFormKey.currentState!.validate()) return;
     if (_isRateExpired) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rate lock has expired. Please refresh the rate first.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rate lock expired. Please refresh.')));
       return;
     }
-
     final amount = double.parse(_amountController.text);
-    final txHash = _txHashController.text.trim();
-
     final result = await ref.read(transactionsNotifierProvider.notifier).createDeposit(
           amountUsdt: amount,
           network: _selectedNetwork,
-          txHash: txHash,
+          txHash: _txHashController.text.trim(),
         );
-
     if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deposit proof submitted successfully.')),
-      );
-      // Navigate to tracking screen for this deposit
       context.replace('/tracker/${result.id}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final txState = ref.watch(transactionsNotifierProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgClr = isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8F9FA);
-    final cardClr = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderClr = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final textPrim = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B);
-    final textSec = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final activeGreen = isDark ? const Color(0xFF00E676) : const Color(0xFF0F9D58);
-    final warningBg = isDark ? const Color(0xFFEF4444).withOpacity(0.15) : const Color(0xFFFFF0F0);
-    final alertBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F3F4);
 
     return AppScaffold(
-      backgroundColor: bgClr,
-      appBar: AppBar(
-        title: const Text('Sell / Deposit USDT'),
-        backgroundColor: bgClr,
-        iconTheme: IconThemeData(color: textPrim),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Sell USDT')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (!_rateLocked) ...[
-              // Step 1: Input Amount and Select Network
+              _buildStepTitle(context, '1. Set Amount', 'Choose how much USDT you want to sell'),
+              const SizedBox(height: 16),
               Form(
                 key: _amountFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'How much USDT would you like to sell?',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrim),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<double>(
-                      initialValue: double.tryParse(_amountController.text) ?? 500.0,
-                      dropdownColor: cardClr,
-                      style: TextStyle(color: textPrim, fontSize: 16),
-                      decoration: InputDecoration(
-                        labelText: 'USDT Amount',
-                        labelStyle: TextStyle(color: textSec),
-                        suffixText: 'USDT',
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 500.0, child: Text('500')),
-                        DropdownMenuItem(value: 750.0, child: Text('750')),
-                        DropdownMenuItem(value: 1000.0, child: Text('1000')),
-                        DropdownMenuItem(value: 1250.0, child: Text('1250')),
-                        DropdownMenuItem(value: 1500.0, child: Text('1500')),
-                        DropdownMenuItem(value: 2000.0, child: Text('2000')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            _amountController.text = val.toStringAsFixed(0);
-                          });
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Please select USDT amount';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Duration of Complete Settlement of INR',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrim),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedSettlementDuration,
-                      dropdownColor: cardClr,
-                      style: TextStyle(color: textPrim, fontSize: 15),
-                      decoration: InputDecoration(
-                        labelText: 'Settlement Duration',
-                        labelStyle: TextStyle(color: textSec),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: '2 Days',
-                          child: Text(
-                            '2 Days (Risky - Fast Transfer)',
-                            style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: '3 Days',
-                          child: Text('3 Days (Safe & Recommended)'),
-                        ),
-                        DropdownMenuItem(
-                          value: '4 Days',
-                          child: Text('4 Days (Extra Secure)'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            _selectedSettlementDuration = val;
-                          });
-                        }
-                      },
-                    ),
-                    if (_selectedSettlementDuration == '2 Days') ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.5), width: 1),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Risky: Rapid large amount transfers can flag your account and cause a bank freeze. We recommend 3 Days or 4 Days.',
-                                style: TextStyle(
-                                  color: Colors.redAccent.withOpacity(0.9),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    Text(
-                      'Choose Blockchain Network',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrim),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        ChoiceChip(
-                          label: Text(
-                            'TRC20 (TRON)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _selectedNetwork == 'TRC20' ? activeGreen : textSec,
-                            ),
-                          ),
-                          selected: _selectedNetwork == 'TRC20',
-                          onSelected: (val) {
-                            if (val) setState(() => _selectedNetwork = 'TRC20');
-                          },
-                        ),
-                        ChoiceChip(
-                          label: Text(
-                            'BEP20 (BSC)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _selectedNetwork == 'BEP20' ? activeGreen : textSec,
-                            ),
-                          ),
-                          selected: _selectedNetwork == 'BEP20',
-                          onSelected: (val) {
-                            if (val) setState(() => _selectedNetwork = 'BEP20');
-                          },
-                        ),
-                        ChoiceChip(
-                          label: Text(
-                            'ERC20 (ETH)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _selectedNetwork == 'ERC20' ? activeGreen : textSec,
-                            ),
-                          ),
-                          selected: _selectedNetwork == 'ERC20',
-                          onSelected: (val) {
-                            if (val) setState(() => _selectedNetwork = 'ERC20');
-                          },
-                        ),
-                        ChoiceChip(
-                          label: Text(
-                            'SOL (Solana)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _selectedNetwork == 'SOL' ? activeGreen : textSec,
-                            ),
-                          ),
-                          selected: _selectedNetwork == 'SOL',
-                          onSelected: (val) {
-                            if (val) setState(() => _selectedNetwork = 'SOL');
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: _lockRateAndAddress,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: activeGreen,
-                        foregroundColor: isDark ? const Color(0xFF0B0F19) : Colors.white,
-                      ),
-                      child: const Text('Get Deposit Address & Lock Rate'),
-                    ),
-                  ],
+                child: DropdownButtonFormField<double>(
+                  value: double.tryParse(_amountController.text) ?? 500.0,
+                  decoration: const InputDecoration(labelText: 'Amount', suffixText: 'USDT'),
+                  items: [500.0, 1000.0, 2500.0, 5000.0, 10000.0].map((e) => DropdownMenuItem(value: e, child: Text(e.toStringAsFixed(0)))).toList(),
+                  onChanged: (val) => val != null ? setState(() => _amountController.text = val.toStringAsFixed(0)) : null,
                 ),
               ),
+              const SizedBox(height: 24),
+              _buildStepTitle(context, '2. Settlement Plan', 'Select your preferred payout duration'),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedSettlementDuration,
+                decoration: const InputDecoration(labelText: 'Payout Speed'),
+                items: const [
+                  DropdownMenuItem(value: '2 Days', child: Text('2 Days (Express - High Risk)')),
+                  DropdownMenuItem(value: '3 Days', child: Text('3 Days (Standard - Safe)')),
+                  DropdownMenuItem(value: '4 Days', child: Text('4 Days (Secure - Recommended)')),
+                ],
+                onChanged: (val) => val != null ? setState(() => _selectedSettlementDuration = val) : null,
+              ),
+              if (_selectedSettlementDuration == '2 Days') ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: theme.colorScheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_rounded, color: theme.colorScheme.error, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text('Note: Express transfers carry higher risk of bank scrutiny.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error))),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              _buildStepTitle(context, '3. Network', 'Choose blockchain network for deposit'),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: ['TRC20', 'BEP20', 'ERC20', 'SOL'].map((net) => ChoiceChip(
+                  label: Text(net),
+                  selected: _selectedNetwork == net,
+                  onSelected: (val) => val ? setState(() => _selectedNetwork = net) : null,
+                )).toList(),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(onPressed: _lockRateAndAddress, child: const Text('LOCK RATE & CONTINUE')),
             ] else ...[
-              // Step 2: Display Locked Rate, Address, QR Code, and Proof Submission
-              Card(
-                color: cardClr,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: borderClr),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Locked Buy-Rate:', style: TextStyle(color: textSec, fontSize: 13)),
-                          Text(
-                            _formatIndianCurrency(_lockedRate),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: activeGreen),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Expected INR Payout:', style: TextStyle(color: textSec, fontSize: 13)),
-                          Text(
-                            _formatIndianCurrency(_lockedInrAmount),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: activeGreen),
-                          ),
-                        ],
-                      ),
-                      Divider(height: 24, color: borderClr),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _isRateExpired ? Icons.timer_off : Icons.timer,
-                            color: _isRateExpired ? Colors.red : activeGreen,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isRateExpired
-                                ? 'Rate Lock Expired!'
-                                : 'Rate Locked: ${_formatTimer(_secondsRemaining)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _isRateExpired ? Colors.red : activeGreen,
-                            ),
-                          ),
-                          if (_isRateExpired) ...[
-                            const SizedBox(width: 12),
-                            IconButton(
-                              icon: Icon(Icons.refresh, color: activeGreen),
-                              onPressed: _refreshRate,
-                              tooltip: 'Refresh Locked Rate',
-                            ),
-                          ]
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildRateLockCard(context),
               const SizedBox(height: 24),
-
-              // Deposit Target Card
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardClr,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: borderClr),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Send Exactly ${_amountController.text} USDT via $_selectedNetwork',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrim),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // QR Code
-                      QrImageView(
-                        data: _depositAddress,
-                        version: QrVersions.auto,
-                        size: 160.0,
-                        backgroundColor: Colors.white,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Copyable Address Box
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: alertBg,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _depositAddress,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: textPrim),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () {
-                                Clipboard.setData(ClipboardData(text: _depositAddress));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Address copied to clipboard.')),
-                                );
-                              },
-                              child: Icon(Icons.copy, size: 20, color: textSec),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // Warnings
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: warningBg,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '⚠ WARNING: Only send USDT via the $_selectedNetwork network to this address. Sending on other chains will result in permanent loss.',
-                          style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Transaction Proof Form
+              _buildDepositInfoCard(context),
+              const SizedBox(height: 32),
+              _buildStepTitle(context, 'Submit Proof', 'Paste your transaction hash (TXID)'),
+              const SizedBox(height: 16),
               Form(
                 key: _proofFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Submit Deposit Proof',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrim),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Paste the transaction hash / TXID from your crypto wallet below.',
-                      style: TextStyle(fontSize: 13, color: textSec),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _txHashController,
-                      style: TextStyle(color: textPrim),
-                      decoration: InputDecoration(
-                        labelText: 'Transaction ID / Hash (TXID)',
-                        labelStyle: TextStyle(color: textSec),
-                        hintText: 'e.g. 0x742d35Cc6634C...',
-                        hintStyle: TextStyle(color: textSec.withOpacity(0.7)),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Transaction hash is required';
-                        }
-                        if (value.trim().length < 16) {
-                          return 'Enter a valid transaction hash';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    if (txState.error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          txState.error!,
-                          style: const TextStyle(color: Colors.red, fontSize: 13),
-                        ),
-                      ),
-
-                    ElevatedButton(
-                      onPressed: txState.loading ? null : _submitDepositProof,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: activeGreen,
-                        foregroundColor: isDark ? const Color(0xFF0B0F19) : Colors.white,
-                      ),
-                      child: txState.loading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(Colors.white),
-                              ),
-                            )
-                          : const Text('Submit Trade Proof'),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () {
-                        setState(() {
-                          _rateLocked = false;
-                        });
-                        _countdownTimer?.cancel();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: textPrim,
-                        side: BorderSide(color: borderClr),
-                      ),
-                      child: const Text('Cancel Trade'),
-                    ),
-                  ],
+                child: TextFormField(
+                  controller: _txHashController,
+                  decoration: const InputDecoration(labelText: 'TXID / Hash', hintText: 'Enter transaction hash'),
+                  validator: (v) => (v == null || v.isEmpty) ? 'Required' : (v.length < 16 ? 'Invalid hash' : null),
                 ),
               ),
+              const SizedBox(height: 24),
+              if (txState.error != null) Text(txState.error!, style: TextStyle(color: theme.colorScheme.error)),
+              ElevatedButton(onPressed: txState.loading ? null : _submitDepositProof, child: txState.loading ? const CircularProgressIndicator(color: Colors.white) : const Text('SUBMIT PROOF')),
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: () => setState(() => _rateLocked = false), child: const Text('CANCEL')),
             ],
           ],
         ),
       ),
     );
   }
+
+  Widget _buildStepTitle(BuildContext context, String title, String subtitle) {
+    final theme = Theme.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: theme.textTheme.titleMedium),
+      Text(subtitle, style: theme.textTheme.bodySmall),
+    ]);
+  }
+
+  Widget _buildRateLockCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.primary.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text('Locked Rate', style: theme.textTheme.bodyMedium),
+              Text(_formatIndianCurrency(_lockedRate), style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.primary)),
+            ]),
+            const SizedBox(height: 8),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text('You will receive', style: theme.textTheme.bodyMedium),
+              Text(_formatIndianCurrency(_lockedInrAmount), style: theme.textTheme.titleLarge),
+            ]),
+            const Divider(height: 32),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.timer_outlined, size: 18, color: _isRateExpired ? theme.colorScheme.error : theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(_isRateExpired ? 'Rate Expired' : 'Expires in ${_formatTimer(_secondsRemaining)}', style: theme.textTheme.labelLarge?.copyWith(color: _isRateExpired ? theme.colorScheme.error : theme.colorScheme.primary)),
+              if (_isRateExpired) IconButton(onPressed: _refreshRate, icon: const Icon(Icons.refresh_rounded, size: 20)),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDepositInfoCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text('Send exactly ${_amountController.text} USDT ($_selectedNetwork)', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: QrImageView(data: _depositAddress, size: 160, version: QrVersions.auto),
+            ),
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: _depositAddress));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Address copied')));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(_depositAddress, style: const TextStyle(fontSize: 12, fontFamily: 'monospace'), overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.copy_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('Only send USDT via $_selectedNetwork. Other assets will be lost.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
