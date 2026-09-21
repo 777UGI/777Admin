@@ -447,9 +447,9 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
     const currentExchangeRate = settings.exchangeRate || 92.5;
     const currentSellingRate = settings.sellingRate || 93.5;
 
-    // Total INR Earned matching Admin Panel calculation exactly:
-    const computedBalanceInr = parseFloat(((totalCommissionUsdt * currentSellingRate) + (partner.balanceInr || 0)).toFixed(2));
-    const baseUsdtBalance = parseFloat((computedBalanceInr / currentSellingRate).toFixed(2));
+    // Total INR Earned matching Admin Panel calculation strictly from transactions:
+    const computedBalanceInr = parseFloat((totalCommissionUsdt * currentSellingRate).toFixed(2));
+    const baseUsdtBalance = totalCommissionUsdt;
 
     // Pending withdrawals sum
     const pendingWd = await Withdrawal.aggregate([
@@ -905,7 +905,7 @@ app.get('/api/admin/agents', async (req, res) => {
       const totalCommUsdt = txSum[0]?.total || 0;
       const settingsObj = await mongoose.model('Settings').findOne() || {};
       const agentSellingRate = settingsObj.sellingRate || 93.5;
-      const totalCommission = parseFloat(((totalCommUsdt * agentSellingRate) + (agent.balanceInr || 0)).toFixed(2));
+      const totalCommission = parseFloat((totalCommUsdt * agentSellingRate).toFixed(2));
       
       return {
         ...agent,
@@ -1246,6 +1246,9 @@ async function ensureAdminAndSettingsExist() {
       });
       console.log('✅ Initialized default System Settings');
     }
+
+    // Reset legacy dummy balanceInr ghost money for all partners
+    await User.updateMany({ role: 'partner' }, { $set: { balanceInr: 0 } });
   } catch (err) {
     console.error('⚠️ Error ensuring Admin & Settings exist:', err.message);
   }
