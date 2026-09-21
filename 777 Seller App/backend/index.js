@@ -371,7 +371,7 @@ app.post(['/api/transactions/deposit', '/api/seller/deposit'], async (req, res) 
     }
     let partnerId = user.referredByAgentId;
     let commissionAmount = 0;
-    
+
     if (partnerId) {
       const partnerUser = await User.findById(partnerId);
       const commPercent = (partnerUser && partnerUser.commissionPercent) ? partnerUser.commissionPercent : 0.50;
@@ -394,7 +394,7 @@ app.post('/api/transactions/update-status', async (req, res) => {
   const tx = await Transaction.findByIdAndUpdate(txId, { status }, { new: true });
   if (tx) {
     io.to(tx.userId.toString()).emit('status_updated', tx);
-    if(tx.partnerId) io.to(tx.partnerId.toString()).emit('commission_updated', tx);
+    if (tx.partnerId) io.to(tx.partnerId.toString()).emit('commission_updated', tx);
     res.json({ success: true, transaction: tx });
   } else {
     res.status(404).json({ success: false, error: 'Not found' });
@@ -416,9 +416,9 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
       partner = await User.findOne({ role: 'partner' }).lean();
     }
     if (!partner) return res.status(404).json({ success: false, error: 'Partner not found' });
-    
+
     const settings = await Settings.findOne() || {};
-    
+
     if (partner.role === 'deboarded') {
       return res.json({
         success: true,
@@ -428,20 +428,20 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
       });
     }
     const totalMerchants = await User.countDocuments({ referredByAgentId: partner._id });
-    
+
     // Calculate total volume and total commission for referred sellers
     const volStats = await Transaction.aggregate([
       { $match: { partnerId: partner._id, status: { $in: ["verified", "approved", "paid"] } } },
       { $group: { _id: null, totalVolume: { $sum: "$amountUsdt" }, totalCommission: { $sum: "$commissionAmount" }, totalTxCount: { $sum: 1 } } }
     ]);
     const totalVolumeUsdt = volStats[0]?.totalVolume || 0.0;
-    const commPercent = partner.commissionPercent !== undefined 
-      ? partner.commissionPercent 
+    const commPercent = partner.commissionPercent !== undefined
+      ? partner.commissionPercent
       : (settings.partnerRate || 0.50);
 
     // If commissionAmount was stored per tx, use it; otherwise compute from totalVolumeUsdt * commPercent %
-    const totalCommissionUsdt = volStats[0]?.totalCommission > 0 
-      ? volStats[0].totalCommission 
+    const totalCommissionUsdt = volStats[0]?.totalCommission > 0
+      ? volStats[0].totalCommission
       : parseFloat((totalVolumeUsdt * (commPercent / 100.0)).toFixed(2));
 
     const currentExchangeRate = settings.exchangeRate || 92.5;
@@ -457,7 +457,7 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
       { $group: { _id: null, totalInr: { $sum: "$amountInr" }, totalUsdt: { $sum: "$amountUsdt" } } }
     ]);
     const pendingWithdrawalInr = pendingWd[0]?.totalInr || 0;
-    
+
     res.json({
       success: true,
       partner: {
@@ -486,7 +486,7 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
         partnerRate: partner.commissionPercent || settings.partnerRate || 0.50,
         commissionPercent: partner.commissionPercent || settings.partnerRate || 0.50,
         sellingRate: settings.sellingRate || 93.5
-      },      support: {
+      }, support: {
         telegramAgent: settings.supportTelegramAgent || 'https://t.me/G_777_agent_desk',
         notice: settings.supportNotice || '24x7 Official Telegram Support Desk Active'
       }
@@ -506,7 +506,7 @@ app.get('/api/partner/merchants/:partnerId', async (req, res) => {
       if (p) actualPartnerId = p._id;
     }
     const sellers = await User.find({ referredByAgentId: actualPartnerId }).lean();
-    
+
     const enrichedSellers = await Promise.all(sellers.map(async (s) => {
       const txAgg = await Transaction.aggregate([
         { $match: { userId: s._id, status: { $in: ["verified", "approved", "paid"] } } },
@@ -523,7 +523,7 @@ app.get('/api/partner/merchants/:partnerId', async (req, res) => {
         totalUsdtDeposited: txAgg[0]?.totalUsdt || 0
       };
     }));
-    
+
     res.json({ success: true, merchants: enrichedSellers });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -681,13 +681,13 @@ app.post('/api/partner/withdraw', async (req, res) => {
     const { partnerId, amountUsdt, amountInr, payoutMethod } = req.body;
     const partner = await User.findById(partnerId);
     if (!partner) return res.status(404).json({ success: false, error: 'Partner not found' });
-    
+
     const numInr = parseFloat(amountInr) || 0;
     if (numInr <= 0) return res.status(400).json({ success: false, error: 'Invalid withdrawal amount' });
     if (partner.balanceInr < numInr) {
       return res.status(400).json({ success: false, error: 'Requested amount exceeds available balance' });
     }
-    
+
     const settings = await Settings.findOne() || {};
     const wd = new Withdrawal({
       partnerId,
@@ -698,10 +698,10 @@ app.post('/api/partner/withdraw', async (req, res) => {
       reference: `WD-${Date.now().toString(36).toUpperCase()}`
     });
     await wd.save();
-    
+
     partner.balanceInr = Math.max(0, partner.balanceInr - numInr);
     await partner.save();
-    
+
     io.to('admin_room').emit('new_withdrawal', wd);
     res.json({ success: true, withdrawal: wd, newBalanceInr: partner.balanceInr });
   } catch (err) {
@@ -713,7 +713,7 @@ app.post('/api/partner/withdraw', async (req, res) => {
 // Seller - Dashboard
 app.get('/api/seller/dashboard', async (req, res) => {
   if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
-  
+
   try {
     // If demo user, return mock transactions
     if (req.userId === 'usr-seller-demo') {
@@ -739,7 +739,7 @@ app.get('/api/seller/dashboard', async (req, res) => {
     }
 
     const transactions = await Transaction.find({ userId: req.userId }).lean();
-    
+
     // Add amountInr to payout dynamically based on rateLockedInr * amountUsdt if not present
     const mappedTxs = transactions.map(tx => {
       let mappedTx = { ...tx, id: tx._id };
@@ -759,7 +759,7 @@ app.get('/api/seller/dashboard', async (req, res) => {
       transactions: mappedTxs,
       kycStatus: user ? user.kycStatus : 'pending'
     });
-  } catch(e) {
+  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
@@ -771,14 +771,14 @@ app.get('/api/seller/dashboard', async (req, res) => {
 app.get('/api/admin/dashboard', async (req, res) => {
   const User = mongoose.model('User');
   const Transaction = mongoose.model('Transaction');
-  
+
   const totalUsers = await User.countDocuments({ role: 'seller' });
   const pendingKycCount = await User.countDocuments({ kycStatus: 'pending' });
   const activeAgents = await User.countDocuments({ role: 'partner' });
-  
+
   const deposits = await Transaction.find();
   const totalVolume = deposits.reduce((sum, d) => sum + (d.amountUsdt || 0), 0);
-  
+
   res.json({
     totalUsers,
     totalDeposits: deposits.length,
@@ -895,7 +895,7 @@ app.get('/api/admin/agents', async (req, res) => {
     const User = mongoose.model('User');
     const Transaction = mongoose.model('Transaction');
     const agents = await User.find({ role: 'partner' }).lean();
-    
+
     const enriched = await Promise.all(agents.map(async (agent) => {
       const sellers = await User.find({ referredByAgentId: agent._id }).select('name email phone kycStatus createdAt').lean();
       const txSum = await Transaction.aggregate([
@@ -906,7 +906,7 @@ app.get('/api/admin/agents', async (req, res) => {
       const settingsObj = await mongoose.model('Settings').findOne() || {};
       const agentSellingRate = settingsObj.sellingRate || 93.5;
       const totalCommission = parseFloat((totalCommUsdt * agentSellingRate).toFixed(2));
-      
+
       return {
         ...agent,
         id: agent._id.toString(),
@@ -916,7 +916,7 @@ app.get('/api/admin/agents', async (req, res) => {
         totalEarned: totalCommission
       };
     }));
-    
+
     res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1005,7 +1005,7 @@ const handleCommissionUpdate = async (req, res) => {
       agent = await User.findOne({ role: 'partner' });
     }
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
-    
+
     agent.commissionPercent = parseFloat(commissionPercent);
     if (isNaN(agent.commissionPercent)) agent.commissionPercent = 0.5;
     await agent.save();
@@ -1014,7 +1014,7 @@ const handleCommissionUpdate = async (req, res) => {
     try {
       const Settings = mongoose.model('Settings');
       await Settings.updateMany({}, { partnerRate: agent.commissionPercent });
-    } catch (e) {}
+    } catch (e) { }
 
     console.log();
     io.emit('agent_commission_updated', { agentId: agent._id, commissionPercent: agent.commissionPercent });
@@ -1069,21 +1069,21 @@ app.get('/api/admin/settings', async (req, res) => {
 
 app.put('/api/admin/settings', async (req, res) => {
   try {
-    const { 
-      defaultAgentId, 
-      rateInrPerUsdt, 
-      exchangeRate, 
-      sellingRate, 
-      partnerRate, 
-      wallets, 
-      supportTelegramSeller, 
-      supportTelegramAgent, 
-      supportNotice, 
-      telegramLink 
+    const {
+      defaultAgentId,
+      rateInrPerUsdt,
+      exchangeRate,
+      sellingRate,
+      partnerRate,
+      wallets,
+      supportTelegramSeller,
+      supportTelegramAgent,
+      supportNotice,
+      telegramLink
     } = req.body;
     let settings = await Settings.findOne();
     if (!settings) settings = await Settings.create({});
-    
+
     if (defaultAgentId !== undefined) settings.defaultAgentId = defaultAgentId;
     if (rateInrPerUsdt !== undefined) settings.exchangeRate = rateInrPerUsdt;
     if (exchangeRate !== undefined) settings.exchangeRate = exchangeRate;
@@ -1096,7 +1096,7 @@ app.put('/api/admin/settings', async (req, res) => {
     if (wallets !== undefined && typeof wallets === "object") {
       settings.wallets = { ...settings.wallets, ...wallets };
     }
-    
+
     await settings.save();
     io.emit("settings_updated", settings);
     res.json(settings);
@@ -1139,11 +1139,11 @@ async function seedDatabase() {
   const User = mongoose.model('User');
   const Transaction = mongoose.model('Transaction');
   const Settings = mongoose.model('Settings');
-  
+
   const adminCount = await User.countDocuments({ role: 'admin' });
   if (adminCount === 0) {
     const admin = await User.create({ name: 'Super Admin', email: 'admin@777.com', password: 'admin', role: 'admin' });
-    
+
     const partners = [];
     for (let i = 1; i <= 6; i++) {
       const partner = await User.create({
@@ -1157,7 +1157,7 @@ async function seedDatabase() {
         balanceInr: 10000 + Math.random() * 50000
       });
       partners.push(partner);
-      
+
       for (let j = 1; j <= 5; j++) {
         const seller = await User.create({
           name: `Seller ${i}-${j}`,
@@ -1167,7 +1167,7 @@ async function seedDatabase() {
           kycStatus: 'verified',
           referredByAgentId: partner._id
         });
-        
+
         // Generate high volume transactions for each seller
         for (let k = 1; k <= 8; k++) {
           const isApproved = Math.random() > 0.3;
@@ -1186,7 +1186,7 @@ async function seedDatabase() {
         }
       }
     }
-    
+
     await Settings.create({
       exchangeRate: 92.5,
       partnerRate: 0.50,
@@ -1212,7 +1212,7 @@ async function ensureAdminAndSettingsExist() {
   try {
     const User = mongoose.model('User');
     const Settings = mongoose.model('Settings');
-    
+
     // Check if Super Admin exists
     const adminCount = await User.countDocuments({ role: 'admin' });
     if (adminCount === 0) {
@@ -1270,7 +1270,7 @@ async function startServer() {
       await ensureAdminAndSettingsExist();
       console.log('✅ Connected to In-Memory MongoDB');
     }
-    
+
     server.listen(PORT, () => {
       console.log(`🚀 Backend running on port ${PORT}`);
     });

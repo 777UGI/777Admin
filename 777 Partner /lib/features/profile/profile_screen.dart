@@ -545,10 +545,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final bankAsync = ref.watch(partnerBankDetailsProvider);
     final withdrawalsAsync = ref.watch(partnerWithdrawalsProvider);
 
-    bankAsync.whenData((bank) => _populateExistingBankDetails(bank));
-
+    final dashboardAsync = ref.watch(partnerDashboardProvider);
     final String partnerName = auth.name ?? "Partner Agent";
-    final String referralCode = auth.referralCode ?? "AGENT001";
+    String referralCode = auth.referralCode ?? "AGENT001";
+    dashboardAsync.whenData((data) {
+      final partner = (data["partner"] as Map<String, dynamic>?) ?? {};
+      if (partner["referralCode"] != null && partner["referralCode"].toString().isNotEmpty) {
+        referralCode = partner["referralCode"].toString();
+      }
+    });
     final String partnerEmail = auth.email ?? "";
 
     final bool hasBank = _accountNumberController.text.trim().isNotEmpty &&

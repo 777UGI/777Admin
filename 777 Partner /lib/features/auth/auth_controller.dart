@@ -88,7 +88,7 @@ class AuthNotifier extends Notifier<AuthState> {
         final partnerId = user["_id"]?.toString() ?? user["id"]?.toString() ?? "";
         final name = user["name"]?.toString() ?? "Partner";
         final userEmail = user["email"]?.toString() ?? email;
-        final refCode = user["referralCode"]?.toString() ?? "AGT_777";
+        final refCode = user["referralCode"]?.toString() ?? "AGENT001";
 
         await storage.saveSession(
           token: token,
