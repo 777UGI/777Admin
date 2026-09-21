@@ -286,8 +286,14 @@ export default function App() {
         setSelectedDeposit(null);
         setRefreshTrigger(p => p + 1);
       } else {
-        const errorData = await res.json();
-        alert(`Update failed: ${errorData.error || 'Unknown error'}`);
+        let errorMsg = 'Unknown error';
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorData.message || errorMsg;
+        } catch (_) {
+          errorMsg = `Server error (${res.status})`;
+        }
+        alert(`Update failed: ${errorMsg}`);
       }
     } catch (err) {
       alert(`Network error: ${err.message}`);

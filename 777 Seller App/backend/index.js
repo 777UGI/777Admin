@@ -800,6 +800,38 @@ app.get('/api/admin/deposits', async (req, res) => {
   res.json(deposits);
 });
 
+// Admin - Update Deposit Status (Blockchain Confirmation & Verification)
+app.put('/api/admin/deposits/:depositId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const depositId = req.params.depositId;
+
+    const Transaction = mongoose.model('Transaction');
+
+    const deposit = await Transaction.findById(depositId);
+    if (!deposit) {
+      return res.status(404).json({ success: false, error: 'Deposit transaction not found' });
+    }
+
+    deposit.status = status;
+    if (status === 'verified' || status === 'approved' || status === 'confirmed') {
+      deposit.verifiedAt = new Date();
+    }
+    await deposit.save();
+
+    console.log(`✅ [Admin] Updated deposit ${depositId} status to: ${status}`);
+
+    res.json({
+      success: true,
+      message: `Deposit transaction successfully updated to ${status}`,
+      deposit
+    });
+  } catch (err) {
+    console.error('⚠️ Deposit status update error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/admin/payouts', async (req, res) => {
   const Withdrawal = mongoose.model('Withdrawal');
   const payouts = await Withdrawal.find().populate('partnerId', 'name email');
