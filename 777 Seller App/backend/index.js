@@ -52,6 +52,11 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
+// Health Check & Root Endpoints
+app.get(['/', '/health', '/api/health'], (req, res) => {
+  res.status(200).json({ status: 'online', service: '777 USDT Gateway API', timestamp: new Date() });
+});
+
 // Seller Web Onboarding Landing Page
 app.get(['/signup', '/onboard', '/register'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'seller_onboard.html'));
