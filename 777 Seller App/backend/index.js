@@ -795,9 +795,31 @@ app.get('/api/admin/users', async (req, res) => {
 });
 
 app.get('/api/admin/deposits', async (req, res) => {
-  const Transaction = mongoose.model('Transaction');
-  const deposits = await Transaction.find().populate('userId', 'name email kycStatus').populate('partnerId', 'name email');
-  res.json(deposits);
+  try {
+    const Transaction = mongoose.model('Transaction');
+    const deposits = await Transaction.find()
+      .populate('userId', 'name email kycStatus')
+      .populate('partnerId', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formatted = deposits.map(d => ({
+      ...d,
+      id: d._id.toString(),
+      _id: d._id.toString(),
+      sellerName: d.userId?.name || 'Seller',
+      sellerEmail: d.userId?.email || 'N/A',
+      partnerName: d.partnerId?.name || 'N/A',
+      amountUsdt: d.amountUsdt || 0,
+      rateLockedInr: d.rateLockedInr || 92.5,
+      network: d.network || 'TRC20',
+      txHash: d.txHash || '',
+      status: d.status || 'pending'
+    }));
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Admin - Update Deposit Status (Blockchain Confirmation & Verification)

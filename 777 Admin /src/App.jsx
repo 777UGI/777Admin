@@ -1427,13 +1427,13 @@ export default function App() {
                       <td>
                         {dep.status === 'pending' && (
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-primary btn-sm" onClick={() => handleDepositStatus(dep.id, 'confirmed')}>
+                            <button className="btn btn-primary btn-sm" onClick={() => handleDepositStatus(dep._id || dep.id, 'confirmed')}>
                               Confirm Blockchain
                             </button>
                           </div>
                         )}
                         {dep.status === 'confirmed' && (
-                          <button className="btn btn-success btn-sm" onClick={() => handleDepositStatus(dep.id, 'verified')}>
+                          <button className="btn btn-success btn-sm" onClick={() => handleDepositStatus(dep._id || dep.id, 'verified')}>
                             Verify & Pay INR
                           </button>
                         )}
