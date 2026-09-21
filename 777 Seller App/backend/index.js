@@ -250,6 +250,17 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(401).json({ success: false, error: 'Incorrect password. Please try again' });
   }
 
+  if (user.role === 'deboarded') {
+    const Settings = mongoose.model('Settings');
+    const settingsObj = await Settings.findOne() || {};
+    return res.status(403).json({
+      success: false,
+      isDeboarded: true,
+      error: "You have been Deboarded from the system. Please contact The Support Desk.",
+      supportTelegram: settingsObj.supportTelegramAgent || 'https://t.me/G_777_agent_desk'
+    });
+  }
+
   const token = generateToken(user);
 
   const userPayload = {
@@ -407,6 +418,15 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
     if (!partner) return res.status(404).json({ success: false, error: 'Partner not found' });
     
     const settings = await Settings.findOne() || {};
+    
+    if (partner.role === 'deboarded') {
+      return res.json({
+        success: true,
+        isDeboarded: true,
+        message: "You have been Deboarded from the system. Please contact The Support Desk.",
+        supportTelegram: settings.supportTelegramAgent || 'https://t.me/G_777_agent_desk'
+      });
+    }
     const totalMerchants = await User.countDocuments({ referredByAgentId: partner._id });
     
     // Calculate total volume and total commission for referred sellers

@@ -1,6 +1,7 @@
 import "dart:async";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:url_launcher/url_launcher.dart";
 import "../../core/theme/theme.dart";
 import "partner_providers.dart";
 
@@ -118,6 +119,82 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           final partner = (data["partner"] as Map<String, dynamic>?) ?? {};
           final stats = (data["stats"] as Map<String, dynamic>?) ?? {};
           final rates = (data["rates"] as Map<String, dynamic>?) ?? {};
+
+          if (data["isDeboarded"] == true || partner["role"] == "deboarded") {
+            final String telegramLink = data["supportTelegram"]?.toString() ?? "https://t.me/G_777_agent_desk";
+            return Scaffold(
+              backgroundColor: AppTheme.darkBackgroundColor,
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(28.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.block_rounded,
+                          size: 64,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        "Account Deboarded",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        data["message"]?.toString() ?? "You have been Deboarded from the system. Please contact The Support Desk.",
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final uri = Uri.parse(telegramLink);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0088CC),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.support_agent_rounded, color: Colors.white),
+                          label: const Text(
+                            "Contact Support Desk",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
 
           final partnerName = partner["name"]?.toString() ?? "Partner Agent";
           final referralCode = partner["referralCode"]?.toString() ?? "AGENT001";
