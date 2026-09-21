@@ -409,25 +409,27 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
     const settings = await Settings.findOne() || {};
     const totalMerchants = await User.countDocuments({ referredByAgentId: partner._id });
     
-    // Volume calculation across referred sellers
+    // Calculate total volume and total commission for referred sellers
     const volStats = await Transaction.aggregate([
       { $match: { partnerId: partner._id, status: { $in: ["verified", "approved", "paid"] } } },
-      { $group: { _id: null, totalVolume: { $sum: "$amountUsdt" }, totalTxCount: { $sum: 1 } } }
+      { $group: { _id: null, totalVolume: { $sum: "$amountUsdt" }, totalCommission: { $sum: "$commissionAmount" }, totalTxCount: { $sum: 1 } } }
     ]);
-    const totalVolumeUsdt = (volStats[0]?.totalVolume && volStats[0]?.totalVolume > 0) ? volStats[0].totalVolume : 0.0;
-
+    const totalVolumeUsdt = volStats[0]?.totalVolume || 0.0;
     const commPercent = partner.commissionPercent !== undefined 
       ? partner.commissionPercent 
       : (settings.partnerRate || 0.50);
 
+    // If commissionAmount was stored per tx, use it; otherwise compute from totalVolumeUsdt * commPercent %
+    const totalCommissionUsdt = volStats[0]?.totalCommission > 0 
+      ? volStats[0].totalCommission 
+      : parseFloat((totalVolumeUsdt * (commPercent / 100.0)).toFixed(2));
+
     const currentExchangeRate = settings.exchangeRate || 92.5;
     const currentSellingRate = settings.sellingRate || 93.5;
 
-    // Available Commission in USDT scales dynamically with commission percentage:
-    // e.g., 36381 USDT volume @ 0.5% = 181.91 USDT; @ 1.0% = 363.81 USDT; @ 100% = 36381 USDT
-    const computedAvailableUsdt = parseFloat((totalVolumeUsdt * (commPercent / 100.0)).toFixed(2));
-    // Available Commission in INR scales with selling / benchmark rate for partners:
-    const computedBalanceInr = parseFloat((computedAvailableUsdt * currentSellingRate).toFixed(2));
+    // Total INR Earned matching Admin Panel calculation exactly:
+    const computedBalanceInr = parseFloat(((totalCommissionUsdt * currentSellingRate) + (partner.balanceInr || 0)).toFixed(2));
+    const baseUsdtBalance = parseFloat((computedBalanceInr / currentSellingRate).toFixed(2));
 
     // Pending withdrawals sum
     const pendingWd = await Withdrawal.aggregate([
@@ -435,8 +437,6 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
       { $group: { _id: null, totalInr: { $sum: "$amountInr" }, totalUsdt: { $sum: "$amountUsdt" } } }
     ]);
     const pendingWithdrawalInr = pendingWd[0]?.totalInr || 0;
-    const baseUsdtBalance = computedAvailableUsdt;
-    const totalUsdtEarned = totalVolumeUsdt;
     
     res.json({
       success: true,
@@ -446,7 +446,7 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
         email: partner.email,
         phone: partner.phone,
         referralCode: partner.referralCode || `AGT-${partner._id.toString().slice(-4).toUpperCase()}`,
-        commissionPercent: partner.commissionPercent || settings.partnerRate || 0.5,
+        commissionPercent: commPercent,
         balanceInr: computedBalanceInr,
         balanceUsdt: baseUsdtBalance,
         kycStatus: partner.kycStatus || 'verified',
@@ -456,8 +456,9 @@ app.get('/api/partner/dashboard/:partnerId', async (req, res) => {
         totalMerchants,
         availableBalanceInr: computedBalanceInr,
         availableBalanceUsdt: baseUsdtBalance,
-        totalCommissionEarnedUsdt: parseFloat(totalUsdtEarned.toFixed(2)),
-        totalCommissionEarnedInr: parseFloat((computedBalanceInr + (totalUsdtEarned * (partner.commissionPercent || settings.partnerRate || 0.50))).toFixed(2)),
+        totalCommissionEarnedUsdt: totalCommissionUsdt,
+        totalCommissionEarnedInr: computedBalanceInr,
+        totalVolumeUsdt,
         pendingWithdrawalInr
       },
       rates: {
