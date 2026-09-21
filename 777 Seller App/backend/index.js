@@ -1186,24 +1186,65 @@ async function seedDatabase() {
     console.log('✅ HUGE Dummy seed data inserted successfully! 6 Agents, 30 Sellers, High Volume!');
   }
 }
+
+async function ensureAdminAndSettingsExist() {
+  try {
+    const User = mongoose.model('User');
+    const Settings = mongoose.model('Settings');
+    
+    // Check if Super Admin exists
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount === 0) {
+      const hashedPassword = await bcrypt.hash('admin', 10);
+      await User.create({
+        name: 'Super Admin',
+        email: 'admin@777.com',
+        password: hashedPassword,
+        role: 'admin'
+      });
+      console.log('✅ Created Super Admin account: admin@777.com / admin');
+    }
+
+    // Check if Settings exist
+    const settingsCount = await Settings.countDocuments({});
+    if (settingsCount === 0) {
+      await Settings.create({
+        exchangeRate: 92.5,
+        partnerRate: 0.50,
+        sellingRate: 93.5,
+        supportTelegramSeller: 'https://t.me/G_777_bot',
+        supportTelegramAgent: 'https://t.me/G_777_agent_desk',
+        supportNotice: '24x7 Official Telegram Support Desk Active',
+        telegramLink: 'https://t.me/ugi777_official',
+        wallets: {
+          TRC20: 'TY1H4HqB7777xYzQrT22WpW1xTRX5YVzQp',
+          BEP20: '0x32A8e9981cB8a9777123992bFc77a90184498f3E',
+          ERC20: '0x71C949981cB8a9777123992bFc77a90184498f3E',
+          SOL: '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin'
+        }
+      });
+      console.log('✅ Initialized default System Settings');
+    }
+  } catch (err) {
+    console.error('⚠️ Error ensuring Admin & Settings exist:', err.message);
+  }
+}
+
 async function startServer() {
   try {
     let finalUri = MONGO_URI;
     try {
-      await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 2000 });
-      console.log('✅ Connected to local MongoDB');
+      await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000 });
+      console.log('✅ Connected to MongoDB');
+      await ensureAdminAndSettingsExist();
     } catch (e) {
-      console.log('⚠️ Local MongoDB not found, starting Memory Server for testing...');
+      console.log('⚠️ Primary MongoDB not reachable, starting Memory Server for testing...', e.message);
       const mongoServer = await MongoMemoryServer.create();
       finalUri = mongoServer.getUri();
       await mongoose.connect(finalUri);
       await seedDatabase();
+      await ensureAdminAndSettingsExist();
       console.log('✅ Connected to In-Memory MongoDB');
-      
-      // Seed a default admin user for testing
-      const User = mongoose.model('User');
-      await User.create({ name: 'Test Admin', email: 'test', password: 'test', role: 'admin' });
-      console.log('✅ Seeded Test Admin: test / test');
     }
     
     server.listen(PORT, () => {
@@ -1215,4 +1256,3 @@ async function startServer() {
 }
 
 startServer();
-
